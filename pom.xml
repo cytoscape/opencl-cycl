@@ -15,7 +15,7 @@
 	<groupId>org.cytoscape</groupId>
 	<artifactId>opencl-cycl</artifactId>
 	<version>3.3.0-SNAPSHOT</version>
-	<name>Cytoscape CyCL (${project.artifactId})</name>
+	<name>CyCL</name>
 	<packaging>bundle</packaging>
 
 	<scm>
