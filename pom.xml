@@ -1,42 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-	<parent>
-		<groupId>org.cytoscape</groupId>
-		<artifactId>impl-parent</artifactId>
-		<version>3.3.0-SNAPSHOT</version>
-	</parent>
-	
 	<properties>
-		<bundle.symbolicName>org.cytoscape.opencl-cycl-impl</bundle.symbolicName>
+		<bundle.symbolicName>org.cytoscape.opencl-cycl</bundle.symbolicName>
 		<bundle.namespace>org.cytoscape.opencl.cycl</bundle.namespace>
 		<natives>${basedir}/target/natives/</natives>
+
+		<maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
+		<maven-bundle-plugin.version>2.5.4</maven-bundle-plugin.version>
 	</properties>
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.cytoscape</groupId>
-	<artifactId>opencl-cycl-impl</artifactId>
+	<artifactId>opencl-cycl</artifactId>
 	<version>3.3.0-SNAPSHOT</version>
 	<name>Cytoscape CyCL (${project.artifactId})</name>
 	<packaging>bundle</packaging>
 
+	<scm>
+		<connection>scm:git:git://github.com/cytoscape/opencl-cycl.git</connection>
+		<developerConnection>scm:git:git@github.com:cytoscape/opencl-cycl.git</developerConnection>
+		<url>https://github.com/cytoscape/opencl-cycl.git</url>
+	</scm>
+
 	<build>
-    	<testSourceDirectory>src/test/java</testSourceDirectory>
+		<testSourceDirectory>src/test/java</testSourceDirectory>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+					<encoding>UTF-8</encoding>
+					<optimize>true</optimize>
+					<showWarnings>true</showWarnings>
+					<showDeprecation>true</showDeprecation>
+					<compilerArguments>
+						<Xmaxwarns>10000</Xmaxwarns>
+						<Xmaxerrs>10000</Xmaxerrs>
+					</compilerArguments>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.7.1</version>
 				<configuration>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
-		        	<argLine>-Djava.library.path=${project.basedir}/target/natives</argLine>
-		        </configuration>
+					<argLine>-Djava.library.path=${project.basedir}/target/natives</argLine>
+				</configuration>
 			</plugin>
 			<!-- Generates the OSGi metadata based on the osgi.bnd file. -->
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
-				<version>2.3.7</version>
+				<version>${maven-bundle-plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
@@ -47,14 +69,24 @@
 						<Bundle-Activator>${bundle.namespace}.CyActivator</Bundle-Activator>
 						<Embed-Dependency>lwjgl;scope=compile|runtime</Embed-Dependency>
 						<Import-Package>!sun.misc,!com.apple.eio,!net.java.games.input,!sun.reflect,*</Import-Package>
-                        <Bundle-NativeCode>
-							native/linux/libjinput-linux.so; native/linux/liblwjgl.so; native/linux/libopenal.so; osname=linux; processor=x86,
-                            native/linux/libjinput-linux64.so; native/linux/liblwjgl64.so; native/linux/libopenal64.so; osname=linux; processor=x86_64,
-                            native/macosx/libjinput-osx.jnilib; native/macosx/liblwjgl.dylib; native/macosx/openal.dylib; osname=macosx; processor=x86; processor=x86_64,
-							native/windows/jinput-dx8.dll; native/windows/jinput-raw.dll; native/windows/lwjgl.dll; native/windows/OpenAL32.dll; osname=win32; processor=x86,
-							native/windows/jinput-raw_64.dll; native/windows/jinput-dx8_64.dll; native/windows/lwjgl64.dll; native/windows/OpenAL64.dll; osname=win32; processor=x86_64,
+						<Bundle-NativeCode>
+							native/linux/libjinput-linux.so;
+							native/linux/liblwjgl.so; native/linux/libopenal.so;
+							osname=linux; processor=x86,
+							native/linux/libjinput-linux64.so;
+							native/linux/liblwjgl64.so; native/linux/libopenal64.so;
+							osname=linux; processor=x86_64,
+							native/macosx/libjinput-osx.jnilib; native/macosx/liblwjgl.dylib;
+							native/macosx/openal.dylib; osname=macosx; processor=x86;
+							processor=x86_64,
+							native/windows/jinput-dx8.dll;
+							native/windows/jinput-raw.dll; native/windows/lwjgl.dll;
+							native/windows/OpenAL32.dll; osname=win32; processor=x86,
+							native/windows/jinput-raw_64.dll;
+							native/windows/jinput-dx8_64.dll; native/windows/lwjgl64.dll;
+							native/windows/OpenAL64.dll; osname=win32; processor=x86_64,
 							*
-                       </Bundle-NativeCode>
+						</Bundle-NativeCode>
 					</instructions>
 				</configuration>
 			</plugin>
@@ -110,7 +142,7 @@
 			<artifactId>org.osgi.core</artifactId>
 			<version>4.2.0</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.cytoscape</groupId>
 			<artifactId>service-api</artifactId>
@@ -131,7 +163,7 @@
 			<artifactId>property-api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 
 		<!-- Logging -->
 		<dependency>
@@ -140,7 +172,7 @@
 			<version>1.5.2</version>
 			<scope>provided</scope>
 		</dependency>
-        
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
