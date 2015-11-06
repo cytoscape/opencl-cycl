@@ -18,32 +18,13 @@ public class CyActivator extends AbstractCyActivator
 	@Override
 	public void start(BundleContext context) throws Exception 
 	{
-		CyProperty<Properties> cyPropertyServiceRef = getService(context, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
-		Properties globalProps = cyPropertyServiceRef.getProperties();
-		String preferredDevice = globalProps.getProperty("opencl.device.preferred");
-		if (preferredDevice == null)
-			preferredDevice = "";
 		
 		//System.out.println("Preferred device = " + preferredDevice);
 		
-		CyApplicationConfiguration applicationConfig = getService(context, CyApplicationConfiguration.class);
-		File configDir = applicationConfig.getConfigurationDirectoryLocation();
-		String dummyPath = configDir.getAbsolutePath() + File.separator + "disable-opencl.dummy";
-		
-		File dummy = new File(dummyPath);
-		if (dummy.exists())
-		{
-			System.out.println("OpenCL was not initialized because it crashed on the previous attempt. If you think it works now, remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
-		}
-		else
-		{						
-			dummy.createNewFile();
+		CyApplicationConfiguration applicationConfig = getService(context, CyApplicationConfiguration.class);		
+		CyProperty<Properties> cyPropertyServiceRef = getService(context, CyProperty.class, "(cyPropertyName=cytoscape3.props)");
 			
-			CyCL.initialize(preferredDevice);
-		
-			if (!dummy.delete())
-				System.out.println("Could not delete OpenCL dummy file despite OpenCL being OK. You should try to remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
-		}
+		CyCL.initialize(applicationConfig, cyPropertyServiceRef);
 		
 		CyCL service = new CyCL();
 		

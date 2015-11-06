@@ -1,10 +1,14 @@
 package org.cytoscape.opencl.cycl;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
+import org.cytoscape.application.CyApplicationConfiguration;
+import org.cytoscape.property.CyProperty;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opencl.CL;
 
@@ -17,6 +21,7 @@ import org.lwjgl.opencl.CL;
  */
 public class CyCL 
 {
+	public static Object initSync = new Object();
 	public static Object sync = new Object();
 	private static List<CyCLDevice> devices = new ArrayList<>();
 	private static boolean isInitialized = false;
@@ -27,55 +32,95 @@ public class CyCL
 	
 	public static List<CyCLDevice> getDevices()
 	{
+		if (devices == null)
+			devices = new ArrayList<>();
+		
 		return devices;
 	}
 	
-	/***
+	/**
 	 * Loads all necessary native libraries, initializes LWJGL and populates the device list.
 	 * Should be called only once on startup.
+	 * 
+	 * @param applicationConfig Instance of Cytoscape's application configuration service
+	 * @param propertyService Instance of Cytoscape's property service for cyPropertyName=cytoscape3.props
+	 * @return True if initialized correctly; false otherwise
 	 */
-	public static boolean initialize(String preferredDevice)
+	public static boolean initialize(CyApplicationConfiguration applicationConfig, CyProperty<Properties> propertyService)
 	{		
-		if (isInitialized)
-			return true;
-				
-		try
+		synchronized (initSync)
 		{
-			CL.create();
-		
-			// Populate device list
-			devices = CyCLDevice.getAll(preferredDevice);
+			if (isInitialized)
+				return true;
+					
+			File configDir = applicationConfig.getConfigurationDirectoryLocation();
+			String dummyPath = configDir.getAbsolutePath() + File.separator + "disable-opencl.dummy";
 			
-			if (devices == null || devices.size() == 0)
-				return false;
+			File dummy = new File(dummyPath);
+			if (dummy.exists())
+			{
+				System.out.println("OpenCL was not initialized because it crashed on the previous attempt.");
+				System.out.println("If you think it works now, remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
+				System.out.println("For more information on how to troubleshoot OpenCL, please refer to http://www.cytoscape.org/troubleshootingGPU.html.");
+			}
+			else
+			{						
+				try
+				{
+					dummy.createNewFile();
+					
+					CL.create();
+				
+					// Populate device list
+					Properties globalProps = propertyService.getProperties();
+					String preferredDevice = globalProps.getProperty("opencl.device.preferred");
+					
+					if (preferredDevice == null)
+						preferredDevice = "";
+					
+					devices = CyCLDevice.getAll(preferredDevice);
+
+					if (!dummy.delete())
+					{
+						System.out.println("Could not delete OpenCL dummy file despite OpenCL being OK.");
+						System.out.println("You should try to remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
+					}
+					
+					if (devices == null || devices.size() == 0)
+						return false;
+				}
+				catch (Throwable e)
+				{
+					return false;
+				}
+			}
+			
+			isInitialized = true;
+			
+			return true;
 		}
-		catch (LWJGLException e)
-		{
-			return false;
-		}
-		
-		isInitialized = true;
-		
-		return true;
 	}
 	
 	public static void makePreferred(String name)
 	{
-		if (devices == null)
-			return;
-		
-		CyCLDevice newPreferred = null;
-		for (CyCLDevice device : devices)
-			if (device.name.equals(name))
-			{
-				newPreferred = device;
-				break;
-			}
-		
-		if (newPreferred != null)
+		synchronized (initSync)
 		{
-			devices.remove(newPreferred);
-			devices.add(0, newPreferred);
+			if (devices == null)
+				return;
+			
+			CyCLDevice newPreferred = null;
+			for (CyCLDevice device : devices)
+				if (device.name.equals(name))
+				{
+					newPreferred = device;
+					break;
+				}
+			
+			if (newPreferred != null)
+			{
+				devices.remove(newPreferred);
+				devices.add(0, newPreferred);
+			}
 		}
 	}
 }
