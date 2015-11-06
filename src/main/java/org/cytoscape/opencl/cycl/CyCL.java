@@ -1,5 +1,6 @@
 package org.cytoscape.opencl.cycl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -17,7 +18,7 @@ import org.lwjgl.opencl.CL;
 public class CyCL 
 {
 	public static Object sync = new Object();
-	private static List<CyCLDevice> devices;
+	private static List<CyCLDevice> devices = new ArrayList<>();
 	private static boolean isInitialized = false;
 	
 	public CyCL()
@@ -26,9 +27,6 @@ public class CyCL
 	
 	public static List<CyCLDevice> getDevices()
 	{
-		if (devices == null)
-			initialize("");
-		
 		return devices;
 	}
 	

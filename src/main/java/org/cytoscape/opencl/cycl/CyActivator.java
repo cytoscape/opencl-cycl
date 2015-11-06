@@ -4,8 +4,10 @@ import static org.cytoscape.work.ServiceProperties.MENU_GRAVITY;
 import static org.cytoscape.work.ServiceProperties.PREFERRED_MENU;
 import static org.cytoscape.work.ServiceProperties.TITLE;
 
+import java.io.File;
 import java.util.Properties;
 
+import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.work.TaskFactory;
@@ -24,21 +26,41 @@ public class CyActivator extends AbstractCyActivator
 		
 		//System.out.println("Preferred device = " + preferredDevice);
 		
-		if (!CyCL.initialize(preferredDevice))	// Don't register anything if OpenCL can't be initialized.
-			return;
-		CyCL service = new CyCL();		
+		CyApplicationConfiguration applicationConfig = getService(context, CyApplicationConfiguration.class);
+		File configDir = applicationConfig.getConfigurationDirectoryLocation();
+		String dummyPath = configDir.getAbsolutePath() + File.separator + "disable-opencl.dummy";
+		
+		File dummy = new File(dummyPath);
+		if (dummy.exists())
+		{
+			System.out.println("OpenCL was not initialized because it crashed on the previous attempt. If you think it works now, remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
+		}
+		else
+		{						
+			dummy.createNewFile();
+			
+			CyCL.initialize(preferredDevice);
+		
+			if (!dummy.delete())
+				System.out.println("Could not delete OpenCL dummy file despite OpenCL being OK. You should try to remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
+		}
+		
+		CyCL service = new CyCL();
 		
 		//System.out.println("Top device after init = " + CyCL.getDevices().get(0).name);
 		
 		Properties properties = new Properties();
 		registerService(context, service, CyCL.class, properties);
 		
-		CyCLSettingsTaskFactory settingsTaskFactory = new CyCLSettingsTaskFactory(cyPropertyServiceRef);
-		
-		Properties settingsTaskFactoryProps = new Properties();
-		settingsTaskFactoryProps.setProperty(PREFERRED_MENU, "Edit.Preferences");
-		settingsTaskFactoryProps.setProperty(MENU_GRAVITY, "5.0");
-		settingsTaskFactoryProps.setProperty(TITLE, "OpenCL Settings...");
-		registerService(context, settingsTaskFactory, TaskFactory.class, settingsTaskFactoryProps);
+		if (CyCL.getDevices().size() > 0)
+		{
+			CyCLSettingsTaskFactory settingsTaskFactory = new CyCLSettingsTaskFactory(cyPropertyServiceRef);
+			
+			Properties settingsTaskFactoryProps = new Properties();
+			settingsTaskFactoryProps.setProperty(PREFERRED_MENU, "Edit.Preferences");
+			settingsTaskFactoryProps.setProperty(MENU_GRAVITY, "5.0");
+			settingsTaskFactoryProps.setProperty(TITLE, "OpenCL Settings...");
+			registerService(context, settingsTaskFactory, TaskFactory.class, settingsTaskFactoryProps);
+		}
 	}
 }
