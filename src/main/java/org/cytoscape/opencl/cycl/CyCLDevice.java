@@ -2,11 +2,14 @@ package org.cytoscape.opencl.cycl;
 
 import org.lwjgl.opencl.*;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Map.Entry;
 
 /***
@@ -332,6 +335,47 @@ public class CyCLDevice
      * Compiles a program and its kernels, and stores it for further use.
      * 
      * @param name Program name
+     * @param programSources Strings containing the individual files comprising the program
+     * @param kernelNames An array of kernel names, as used in the program
+     * @param defines Dictionary of definitions to be injected as "#define key value"; can be null
+     * @return The program if it has been successfully compiled
+     */
+    public CyCLProgram addProgram(String name, String[] programSources, String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation)
+    {
+    	if (hasProgram(name))
+    		return getProgram(name);
+    	
+    	HashMap<String, String> alldefines = getDeviceSpecificDefines();
+    	if (defines != null)
+    		alldefines.putAll(defines);
+    	
+    	CyCLProgram added;
+		added = new CyCLProgram(context, this, programSources, kernelNames, alldefines, silentCompilation);
+    	
+    	programs.put(name, added);
+    	
+    	return added;
+    	
+    }
+    
+    /***
+     * Compiles a program and its kernels, and stores it for further use.
+     * 
+     * @param name Program name
+     * @param programSource A sring containing the program source
+     * @param kernelNames An array of kernel names, as used in the program
+     * @param defines Dictionary of definitions to be injected as "#define key value"; can be null
+     * @return The program if it has been successfully compiled
+     */
+    public CyCLProgram addProgram(String name, String programSource, String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation)
+    {
+    	return addProgram(name, new String[] {programSource}, kernelNames, defines, silentCompilation);
+    }
+    	
+    /***
+     * Compiles a program and its kernels, and stores it for further use.
+     * 
+     * @param name Program name
      * @param resourcePath Path to the resource with the program's text
      * @param kernelNames An array of kernel names, as used in the program
      * @param defines Dictionary of definitions to be injected as "#define key value"; can be null
@@ -341,25 +385,22 @@ public class CyCLDevice
     {
     	if (hasProgram(name))
     		return getProgram(name);
+    
+		try
+		{
+	    	InputStream programTextStream = resourcePath.openStream();
+	    	Scanner programTextScanner = new Scanner(programTextStream, "UTF-8");
+	    	String programText = programTextScanner.useDelimiter("\\Z").next();
+	    	programTextScanner.close();
+	        programTextStream.close();
+	        
+	        return addProgram(name, new String[]{programText}, kernelNames, defines, silentCompilation);
+		}
+		catch (IOException ex)
+		{
+			throw new CyCLException("Error reading OpenCL program.", ex);
+		}
     	
-    	HashMap<String, String> alldefines = getDeviceSpecificDefines();
-    	if (defines != null)
-	    	for (Entry<String, String> entry : defines.entrySet())
-	    		alldefines.put(entry.getKey(), entry.getValue());
-    	
-    	CyCLProgram added;
-    	try
-    	{
-    		added = new CyCLProgram(context, this, resourcePath, kernelNames, alldefines, silentCompilation);
-    	}
-    	catch (Exception e)
-    	{
-    		throw new RuntimeException();
-    	}
-    	
-    	programs.put(name, added);
-    	
-    	return added;
     }
     
     /***
