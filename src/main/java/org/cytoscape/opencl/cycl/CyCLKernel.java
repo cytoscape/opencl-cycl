@@ -24,6 +24,11 @@ public class CyCLKernel
 	
 	public void execute(long[] dimsGlobal, long[] dimsLocal, Object... args)
 	{
+		executeWithOffset(dimsGlobal, dimsLocal, null, args);
+	}
+	
+	public void executeWithOffset(long[] dimsGlobal, long[] dimsLocal, long globalOffset[], Object... args)
+	{
 		synchronized (CyCL.sync)
 		{
 			int a = 0;
@@ -61,6 +66,21 @@ public class CyCLKernel
 			PointerBuffer bufferGlobal = PointerBuffer.allocateDirect(dimsGlobal.length);
 			for (int i = 0; i < dimsGlobal.length; i++)
 				bufferGlobal.put(i, dimsGlobal[i]);
+			
+			PointerBuffer bufferGlobalOffset = null;
+			if (globalOffset != null)
+			{
+				if(globalOffset.length != dimsGlobal.length)
+				{
+					throw new CyCLException("Global offset and global dimensions must have the same length");
+				}
+				bufferGlobalOffset = PointerBuffer.allocateDirect(globalOffset.length);				
+				for (int i = 0; i < globalOffset.length; i++)
+				{
+					bufferGlobalOffset.put(i, globalOffset[i]);
+				}
+			}
+			
 			PointerBuffer bufferLocal = null;
 			if(dimsLocal != null)
 			{
@@ -71,7 +91,7 @@ public class CyCLKernel
 		
 			try
 			{
-				Util.checkCLError(CL10.clEnqueueNDRangeKernel(context.getQueue(), kernel, dimsGlobal.length, null, bufferGlobal, bufferLocal, null, null));		
+				Util.checkCLError(CL10.clEnqueueNDRangeKernel(context.getQueue(), kernel, dimsGlobal.length, bufferGlobalOffset, bufferGlobal, bufferLocal, null, null));		
 			}
 			catch (Exception e) {}
 		}
