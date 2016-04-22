@@ -15,7 +15,11 @@ public class CLTest
 		try
 		{
 			CL.create();
+			//Also performs a benchmark without offsets
 			device = CyCLDevice.getAll("").get(0);
+			
+			//Now a benchmark with offsets
+			device.performBenchmark(true);
 		} 
 		catch (Exception e) 
 		{
@@ -27,5 +31,5 @@ public class CLTest
 		
 		CL.destroy();
 	}
-
+	
 }

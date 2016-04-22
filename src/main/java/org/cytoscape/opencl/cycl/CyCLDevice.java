@@ -2,11 +2,14 @@ package org.cytoscape.opencl.cycl;
 
 import org.lwjgl.opencl.*;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Map.Entry;
 
 /***
@@ -187,91 +190,137 @@ public class CyCLDevice
 			bestWarpSize = 1;
 		}
 		
+	        
+		// Run the benchmark     
+		if (doBenchmark)
+		{	       
+			benchmarkScore = performBenchmark(false /*do not use offsets*/);
+		}
+		else
+		{
+			benchmarkScore = 0.0;
+		}		        
+	}
+	    
+	/**
+	 * Runs a simple benchmark on the device. If there is a problem, a {@link CyCLException} is thrown, otherwise
+	 * it returns the benchmark score.  
+	 * @param useOffsets if true, the benchmark includes offset workloads
+	 * @return the benchmark value. The lower, the better.
+	 */
+	public double performBenchmark(boolean useOffsets)
+	{
         CyCLProgram program = null;
         try
 		{
 			program = new CyCLProgram(context, this, getClass().getResource("/Benchmark.cl"), new String[] { "BenchmarkKernel" }, null, true);
 		}
-		catch (Exception e1) { throw new RuntimeException("Could not build benchmark program."); }
-	        
-		// Run the benchmark     
-		if (doBenchmark)
-		{
-	        
-	        int n = 1 << 13;
-	        int[] a = new int[n];
-	        int[] b = new int[n];
-	        int[] c = new int[n];
-	        
-	        for(int i=0; i < n; i++)
-	        {
-	        	a[i] = i;
-	        	b[i] = i;
-	        }
-	
-	        CyCLBuffer bufferA = new CyCLBuffer(context, a);
-	        CyCLBuffer bufferB = new CyCLBuffer(context, b);
-	        CyCLBuffer bufferC = new CyCLBuffer(context, int.class, n);
-	        
-	        // Warm up
-	        program.getKernel("BenchmarkKernel").execute(new long[] { n }, null,
-					 bufferA,
-					 bufferB,
-					 bufferC,
-					 n);
-	        bufferC.getFromDevice(c);
-	        
-	        List<Double> logTimes = new ArrayList<>();
-	        
-	        // Benchmark       
-	        for (int i = 0; i < 4; i++)
-			{
-	        	long timeStart = System.nanoTime();
-	        	
-	        	int benchN = 1 << (10 + i);
-	
-				program.getKernel("BenchmarkKernel").execute(new long[] { benchN }, null,
-															 bufferA,
-															 bufferB,
-															 bufferC,
-															 benchN);
-				CL10.clFinish(context.getQueue());
-	        	
-		        long timeStop = System.nanoTime();
-		        logTimes.add(Math.log((double)(timeStop - timeStart) * 1e-9));
-			}
-	        // Get back the result to check its correctness
-	        bufferC.getFromDevice(c);
-	        
-	        double diffsum = 0.0;
-	        for (int i = 0; i < logTimes.size() - 1; i++)
-	        	diffsum += logTimes.get(i + 1) - logTimes.get(i);
-	        diffsum /= (double)(logTimes.size() - 1);
-	        benchmarkScore = Math.exp(diffsum);        
-	        
-	        for (int i = 0; i < c.length; i++)
-			{
-				if (c[i] != Math.max(0, i - 1))
-					throw new RuntimeException("OpenCL benchmark produced wrong values.");
-			}        
-	        
-	        // Clean up after benchmark
-	        try
-			{	        
-		        bufferA.free();
-		        bufferB.free();
-		        bufferC.free();
-			}
-			catch (Throwable e)	{ throw new RuntimeException("Could not release resources."); }
+		catch (Exception e1) 
+        { 
+			throw new CyCLException("Could not build benchmark program.", e1); 
 		}
-		else
-		{
-			benchmarkScore = 0.0;
-		}
-		        
-		program.finalize();
+		
+        try {
+            int n = 1 << 13;
+            int[] a = new int[n];
+            int[] b = new int[n];
+            int[] c = new int[n];
+            
+            for(int i=0; i < n; i++)
+            {
+            	a[i] = i;
+            	b[i] = i;
+            }
+
+            CyCLBuffer bufferA = new CyCLBuffer(context, a);
+            CyCLBuffer bufferB = new CyCLBuffer(context, b);
+            CyCLBuffer bufferC = new CyCLBuffer(context, int.class, n);
+            
+            try {
+                // Warm up
+                program.getKernel("BenchmarkKernel").execute(new long[] { n }, null,
+        				 bufferA,
+        				 bufferB,
+        				 bufferC,
+        				 n);
+                bufferC.getFromDevice(c);
+                
+                List<Double> logTimes = new ArrayList<>();
+                
+                // Benchmark       
+                for (int i = 0; i < 4; i++)
+        		{
+                	long timeStart = System.nanoTime();
+                	
+                	int benchN = 1 << (10 + i);
+
+                	if(!useOffsets)
+                	{
+        			program.getKernel("BenchmarkKernel").execute(new long[] { benchN }, null,
+        														 bufferA,
+        														 bufferB,
+        														 bufferC,
+        														 benchN);
+                	}
+                	else
+                	{
+                		for(int offset = 0; offset < benchN; offset += 128)
+                		{                			
+                			program.getKernel("BenchmarkKernel").executeWithOffset(new long[] { benchN }, null, new long[] {offset},
+   								 bufferA,
+   								 bufferB,
+   								 bufferC,
+   								 benchN);                		                			
+                		}
+                	}
+                	
+                	
+        			CL10.clFinish(context.getQueue());
+                	
+        	        long timeStop = System.nanoTime();
+        	        logTimes.add(Math.log((double)(timeStop - timeStart) * 1e-9));
+        		}
+                // Get back the result to check its correctness
+                bufferC.getFromDevice(c);
+                
+                double diffsum = 0.0;
+                for (int i = 0; i < logTimes.size() - 1; i++)
+                	diffsum += logTimes.get(i + 1) - logTimes.get(i);
+                diffsum /= (double)(logTimes.size() - 1);
+                
+                
+                for (int i = 0; i < c.length; i++)
+        		{
+        			if (c[i] != Math.max(0, i - 1))
+        				throw new CyCLException("OpenCL benchmark produced wrong values.");
+        		}                    	
+                
+                return Math.exp(diffsum);        
+                
+            }
+            finally
+            {
+    	        bufferA.free();
+    	        bufferB.free();
+    	        bufferC.free();            	
+            }            
+        }
+        catch (CyCLException ex)
+        {
+        	//just rethrow
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new CyCLException("Error running benchmark", ex);
+        }
+        finally 
+        {
+    		program.finalize();        	
+        }
+
 	}
-	    
+	
 	/***
 	 * Gets the underlying LWJGL device ID.
 	 * 
@@ -332,6 +381,47 @@ public class CyCLDevice
      * Compiles a program and its kernels, and stores it for further use.
      * 
      * @param name Program name
+     * @param programSources Strings containing the individual files comprising the program
+     * @param kernelNames An array of kernel names, as used in the program
+     * @param defines Dictionary of definitions to be injected as "#define key value"; can be null
+     * @return The program if it has been successfully compiled
+     */
+    public CyCLProgram addProgram(String name, String[] programSources, String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation)
+    {
+    	if (hasProgram(name))
+    		return getProgram(name);
+    	
+    	HashMap<String, String> alldefines = getDeviceSpecificDefines();
+    	if (defines != null)
+    		alldefines.putAll(defines);
+    	
+    	CyCLProgram added;
+		added = new CyCLProgram(context, this, programSources, kernelNames, alldefines, silentCompilation);
+    	
+    	programs.put(name, added);
+    	
+    	return added;
+    	
+    }
+    
+    /***
+     * Compiles a program and its kernels, and stores it for further use.
+     * 
+     * @param name Program name
+     * @param programSource A sring containing the program source
+     * @param kernelNames An array of kernel names, as used in the program
+     * @param defines Dictionary of definitions to be injected as "#define key value"; can be null
+     * @return The program if it has been successfully compiled
+     */
+    public CyCLProgram addProgram(String name, String programSource, String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation)
+    {
+    	return addProgram(name, new String[] {programSource}, kernelNames, defines, silentCompilation);
+    }
+    	
+    /***
+     * Compiles a program and its kernels, and stores it for further use.
+     * 
+     * @param name Program name
      * @param resourcePath Path to the resource with the program's text
      * @param kernelNames An array of kernel names, as used in the program
      * @param defines Dictionary of definitions to be injected as "#define key value"; can be null
@@ -341,25 +431,22 @@ public class CyCLDevice
     {
     	if (hasProgram(name))
     		return getProgram(name);
+    
+		try
+		{
+	    	InputStream programTextStream = resourcePath.openStream();
+	    	Scanner programTextScanner = new Scanner(programTextStream, "UTF-8");
+	    	String programText = programTextScanner.useDelimiter("\\Z").next();
+	    	programTextScanner.close();
+	        programTextStream.close();
+	        
+	        return addProgram(name, new String[]{programText}, kernelNames, defines, silentCompilation);
+		}
+		catch (IOException ex)
+		{
+			throw new CyCLException("Error reading OpenCL program.", ex);
+		}
     	
-    	HashMap<String, String> alldefines = getDeviceSpecificDefines();
-    	if (defines != null)
-	    	for (Entry<String, String> entry : defines.entrySet())
-	    		alldefines.put(entry.getKey(), entry.getValue());
-    	
-    	CyCLProgram added;
-    	try
-    	{
-    		added = new CyCLProgram(context, this, resourcePath, kernelNames, alldefines, silentCompilation);
-    	}
-    	catch (Exception e)
-    	{
-    		throw new RuntimeException();
-    	}
-    	
-    	programs.put(name, added);
-    	
-    	return added;
     }
     
     /***

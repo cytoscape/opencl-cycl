@@ -22,37 +22,65 @@ public class CyCLProgram
 	
 	public CyCLProgram(CyCLContext context, CyCLDevice device, URL resourcePath, String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation) throws IOException
 	{
-		try
-		{
-	    	InputStream programTextStream = resourcePath.openStream();
-	    	Scanner programTextScanner = new Scanner(programTextStream, "UTF-8");
-	    	String programText = programTextScanner.useDelimiter("\\Z").next();
-	    	programTextScanner.close();
-	        programTextStream.close();
-	        
-	        this.defines = new HashMap<>();
-	        if (defines != null)
-		        for (Entry<String, String> entry : defines.entrySet())
-		        {
-		        	String defineline = "#define " + entry.getKey() + " " + entry.getValue() + "\n";
-		        	programText = defineline + programText;
-		        	this.defines.put(entry.getKey(), entry.getValue());
-		        }
-	    
-	        IntBuffer errorBuffer = BufferUtils.createIntBuffer(1);
-	        program = CL10.clCreateProgramWithSource(context.getContext(), programText, errorBuffer);
-	        Util.checkCLError(errorBuffer.get(0));
-			
-	        Util.checkCLError(CL10.clBuildProgram(program, device.getDevice(), "", null));
-			
-			for(String kernelName : kernelNames)
+    	InputStream programTextStream = resourcePath.openStream();
+    	Scanner programTextScanner = new Scanner(programTextStream, "UTF-8");
+    	String programText = programTextScanner.useDelimiter("\\Z").next();
+    	programTextScanner.close();
+        programTextStream.close();
+        
+        prepareAndBuildProgram(context, device, new String[] {programText}, kernelNames, defines, silentCompilation);	        	        
+	}
+
+	public CyCLProgram(CyCLContext context, CyCLDevice device, String source, String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation) 
+	{
+        prepareAndBuildProgram(context, device, new String[] {source}, kernelNames, defines, silentCompilation);	        
+	}
+	
+	public CyCLProgram(CyCLContext context, CyCLDevice device, String sources[], String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation) 
+	{
+        prepareAndBuildProgram(context, device, sources, kernelNames, defines, silentCompilation);	        
+	}
+
+	private void prepareAndBuildProgram(CyCLContext context, CyCLDevice device, String[] sources, String[] kernelNames, HashMap<String, String> defines, boolean silentCompilation)
+	{
+		try {
+			this.defines = defines;
+			StringBuilder buildOptions = new StringBuilder();
+			if (defines != null)
+			{
+				for (Entry<String, String> entry : defines.entrySet()) {
+					if(entry.getValue() == null)
+					{
+						buildOptions.append(" -D").append(entry.getKey());
+					}
+					else
+					{
+						buildOptions.append(" -D").append(entry.getKey()).append("=").append(entry.getValue());
+					}
+				}
+			}
+
+			IntBuffer errorBuffer = BufferUtils.createIntBuffer(1);
+			program = CL10.clCreateProgramWithSource(context.getContext(), sources, errorBuffer);
+			Util.checkCLError(errorBuffer.get(0));
+
+			Util.checkCLError(CL10.clBuildProgram(program, device.getDevice(), buildOptions.toString(), null));
+
+			for (String kernelName : kernelNames)
+			{
 				kernels.put(kernelName, new CyCLKernel(context, this, kernelName));
+			}
+
 		}
-		catch (Exception exc)
+		catch (OpenCLException exc)
 		{
-			if (!silentCompilation)
+			if (!silentCompilation && program != null) //TODO change to Cytoscape logging mechanism
 				System.out.println(program.getBuildInfoString(device.getDevice(), CL10.CL_PROGRAM_BUILD_LOG));
-			throw new RuntimeException();
+			
+			throw new CyCLException("Could not create CL program", exc);
+		}
+		catch (Exception exc) {
+			throw new CyCLException("Could not create CL program", exc);
 		}
 	}
 	
@@ -86,7 +114,7 @@ public class CyCLProgram
 		catch (Throwable exc)
 		{
 			System.out.println(exc.getMessage());
-			throw new RuntimeException("Could not finalize CyCLProgram object.");
+			throw new CyCLException("Could not finalize CyCLProgram object.");
 		}
 	}
 }
