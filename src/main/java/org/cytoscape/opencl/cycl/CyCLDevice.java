@@ -190,91 +190,137 @@ public class CyCLDevice
 			bestWarpSize = 1;
 		}
 		
+	        
+		// Run the benchmark     
+		if (doBenchmark)
+		{	       
+			benchmarkScore = performBenchmark(false /*do not use offsets*/);
+		}
+		else
+		{
+			benchmarkScore = 0.0;
+		}		        
+	}
+	    
+	/**
+	 * Runs a simple benchmark on the device. If there is a problem, a {@link CyCLException} is thrown, otherwise
+	 * it returns the benchmark score.  
+	 * @param useOffsets if true, the benchmark includes offset workloads
+	 * @return the benchmark value. The lower, the better.
+	 */
+	public double performBenchmark(boolean useOffsets)
+	{
         CyCLProgram program = null;
         try
 		{
 			program = new CyCLProgram(context, this, getClass().getResource("/Benchmark.cl"), new String[] { "BenchmarkKernel" }, null, true);
 		}
-		catch (Exception e1) { throw new RuntimeException("Could not build benchmark program."); }
-	        
-		// Run the benchmark     
-		if (doBenchmark)
-		{
-	        
-	        int n = 1 << 13;
-	        int[] a = new int[n];
-	        int[] b = new int[n];
-	        int[] c = new int[n];
-	        
-	        for(int i=0; i < n; i++)
-	        {
-	        	a[i] = i;
-	        	b[i] = i;
-	        }
-	
-	        CyCLBuffer bufferA = new CyCLBuffer(context, a);
-	        CyCLBuffer bufferB = new CyCLBuffer(context, b);
-	        CyCLBuffer bufferC = new CyCLBuffer(context, int.class, n);
-	        
-	        // Warm up
-	        program.getKernel("BenchmarkKernel").execute(new long[] { n }, null,
-					 bufferA,
-					 bufferB,
-					 bufferC,
-					 n);
-	        bufferC.getFromDevice(c);
-	        
-	        List<Double> logTimes = new ArrayList<>();
-	        
-	        // Benchmark       
-	        for (int i = 0; i < 4; i++)
-			{
-	        	long timeStart = System.nanoTime();
-	        	
-	        	int benchN = 1 << (10 + i);
-	
-				program.getKernel("BenchmarkKernel").execute(new long[] { benchN }, null,
-															 bufferA,
-															 bufferB,
-															 bufferC,
-															 benchN);
-				CL10.clFinish(context.getQueue());
-	        	
-		        long timeStop = System.nanoTime();
-		        logTimes.add(Math.log((double)(timeStop - timeStart) * 1e-9));
-			}
-	        // Get back the result to check its correctness
-	        bufferC.getFromDevice(c);
-	        
-	        double diffsum = 0.0;
-	        for (int i = 0; i < logTimes.size() - 1; i++)
-	        	diffsum += logTimes.get(i + 1) - logTimes.get(i);
-	        diffsum /= (double)(logTimes.size() - 1);
-	        benchmarkScore = Math.exp(diffsum);        
-	        
-	        for (int i = 0; i < c.length; i++)
-			{
-				if (c[i] != Math.max(0, i - 1))
-					throw new RuntimeException("OpenCL benchmark produced wrong values.");
-			}        
-	        
-	        // Clean up after benchmark
-	        try
-			{	        
-		        bufferA.free();
-		        bufferB.free();
-		        bufferC.free();
-			}
-			catch (Throwable e)	{ throw new RuntimeException("Could not release resources."); }
+		catch (Exception e1) 
+        { 
+			throw new CyCLException("Could not build benchmark program.", e1); 
 		}
-		else
-		{
-			benchmarkScore = 0.0;
-		}
-		        
-		program.finalize();
+		
+        try {
+            int n = 1 << 13;
+            int[] a = new int[n];
+            int[] b = new int[n];
+            int[] c = new int[n];
+            
+            for(int i=0; i < n; i++)
+            {
+            	a[i] = i;
+            	b[i] = i;
+            }
+
+            CyCLBuffer bufferA = new CyCLBuffer(context, a);
+            CyCLBuffer bufferB = new CyCLBuffer(context, b);
+            CyCLBuffer bufferC = new CyCLBuffer(context, int.class, n);
+            
+            try {
+                // Warm up
+                program.getKernel("BenchmarkKernel").execute(new long[] { n }, null,
+        				 bufferA,
+        				 bufferB,
+        				 bufferC,
+        				 n);
+                bufferC.getFromDevice(c);
+                
+                List<Double> logTimes = new ArrayList<>();
+                
+                // Benchmark       
+                for (int i = 0; i < 4; i++)
+        		{
+                	long timeStart = System.nanoTime();
+                	
+                	int benchN = 1 << (10 + i);
+
+                	if(!useOffsets)
+                	{
+        			program.getKernel("BenchmarkKernel").execute(new long[] { benchN }, null,
+        														 bufferA,
+        														 bufferB,
+        														 bufferC,
+        														 benchN);
+                	}
+                	else
+                	{
+                		for(int offset = 0; offset < benchN; offset += 128)
+                		{                			
+                			program.getKernel("BenchmarkKernel").executeWithOffset(new long[] { benchN }, null, new long[] {offset},
+   								 bufferA,
+   								 bufferB,
+   								 bufferC,
+   								 benchN);                		                			
+                		}
+                	}
+                	
+                	
+        			CL10.clFinish(context.getQueue());
+                	
+        	        long timeStop = System.nanoTime();
+        	        logTimes.add(Math.log((double)(timeStop - timeStart) * 1e-9));
+        		}
+                // Get back the result to check its correctness
+                bufferC.getFromDevice(c);
+                
+                double diffsum = 0.0;
+                for (int i = 0; i < logTimes.size() - 1; i++)
+                	diffsum += logTimes.get(i + 1) - logTimes.get(i);
+                diffsum /= (double)(logTimes.size() - 1);
+                
+                
+                for (int i = 0; i < c.length; i++)
+        		{
+        			if (c[i] != Math.max(0, i - 1))
+        				throw new CyCLException("OpenCL benchmark produced wrong values.");
+        		}                    	
+                
+                return Math.exp(diffsum);        
+                
+            }
+            finally
+            {
+    	        bufferA.free();
+    	        bufferB.free();
+    	        bufferC.free();            	
+            }            
+        }
+        catch (CyCLException ex)
+        {
+        	//just rethrow
+        	throw ex;
+        }
+        catch (Exception ex)
+        {
+        	throw new CyCLException("Error running benchmark", ex);
+        }
+        finally 
+        {
+    		program.finalize();        	
+        }
+
 	}
-	    
+	
 	/***
 	 * Gets the underlying LWJGL device ID.
 	 * 
