@@ -15,7 +15,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.cytoscape</groupId>
 	<artifactId>opencl-cycl</artifactId>
-	<version>3.3.2-SNAPSHOT</version>
+	<version>3.3.2</version>
 	<name>CyCL</name>
 	<packaging>bundle</packaging>
 

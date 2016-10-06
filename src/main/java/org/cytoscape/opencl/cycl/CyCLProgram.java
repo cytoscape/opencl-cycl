@@ -77,6 +77,7 @@ public class CyCLProgram
 			if (!silentCompilation && program != null) //TODO change to Cytoscape logging mechanism
 				System.out.println(program.getBuildInfoString(device.getDevice(), CL10.CL_PROGRAM_BUILD_LOG));
 			
+			System.out.println("Could not create CL program");
 			throw new CyCLException("Could not create CL program", exc);
 		}
 		catch (Exception exc) {
@@ -113,7 +114,7 @@ public class CyCLProgram
 		}
 		catch (Throwable exc)
 		{
-			System.out.println(exc.getMessage());
+			// System.out.println("CyCLProgram Exception: "+exc.getMessage());
 			throw new CyCLException("Could not finalize CyCLProgram object.");
 		}
 	}

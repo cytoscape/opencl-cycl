@@ -498,7 +498,7 @@ public class CyCLBuffer
 		} 
 		catch (Throwable exc) 
 		{ 			
-			System.out.println(exc.getMessage());
+			// System.out.println("CyCLBuffer Exception: "+exc.getMessage());
 			throw new RuntimeException("Could not finalize CyCLBuffer object.");
 		}
 	}

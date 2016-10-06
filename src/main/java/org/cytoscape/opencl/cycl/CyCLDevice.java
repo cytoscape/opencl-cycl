@@ -608,7 +608,7 @@ public class CyCLDevice
 		}
 		catch (Throwable exc)
 		{
-			System.out.println(exc.getMessage());
+			// System.out.println("CyCLDevice Exception: "+exc.getMessage());
 			throw new RuntimeException("Could not finalize CyCLDevice object.");
 		}
 	}
