@@ -601,15 +601,18 @@ public class CyCLDevice
 			for(Entry<String, CyCLProgram> entry : programs.entrySet())
 				entry.getValue().finalize();
 			
-			context.finalize();
+			if(context != null)
+			{
+				context.finalize();
+			}
 			
 			finalized = true;		
 			super.finalize();
 		}
 		catch (Throwable exc)
 		{
-			System.out.println(exc.getMessage());
-			throw new RuntimeException("Could not finalize CyCLDevice object.");
+			System.out.println("Could not finalize CyCLDevice " + name + ": " + exc.getMessage());
+			throw new RuntimeException("Could not finalize CyCLDevice object.", exc);
 		}
 	}
 
