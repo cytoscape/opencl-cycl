@@ -4,12 +4,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.StringTokenizer;
-import java.util.Vector;
 
 import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.property.CyProperty;
-import org.lwjgl.LWJGLException;
 import org.lwjgl.opencl.CL;
 
 
@@ -91,6 +88,7 @@ public class CyCL
 				}
 				catch (Throwable e)
 				{
+					e.printStackTrace();
 					return false;
 				}
 			}

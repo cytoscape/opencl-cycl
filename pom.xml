@@ -94,6 +94,9 @@
 				<configuration>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
 					<argLine>-Djava.library.path=${project.basedir}/target/natives</argLine>
+					<systemPropertyVariables>
+						<org.lwjgl.util.Debug>true</org.lwjgl.util.Debug>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 			<!-- Generates the OSGi metadata based on the osgi.bnd file. -->
