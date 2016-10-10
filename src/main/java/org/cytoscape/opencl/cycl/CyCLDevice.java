@@ -598,8 +598,16 @@ public class CyCLDevice
 			if(finalized)
 				return;
 			
-			for(Entry<String, CyCLProgram> entry : programs.entrySet())
-				entry.getValue().finalize();
+			if(programs != null)
+			{
+				for(Entry<String, CyCLProgram> entry : programs.entrySet())
+				{
+					if(entry.getValue() != null)
+					{
+						entry.getValue().finalize();
+					}
+				}
+			}
 			
 			if(context != null)
 			{
