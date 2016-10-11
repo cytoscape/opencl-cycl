@@ -112,7 +112,7 @@ public class CyCLKernel
 		}
 		catch (Throwable exc)
 		{
-			// System.out.println("Exception: "+exc.getMessage());
+			System.out.println("Could not finalize CyCLKernel " + kernel + ": " + exc.getMessage());
 			throw new RuntimeException("Could not finalize CyCLKernel object.");
 		}
 	}

@@ -4,12 +4,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.StringTokenizer;
-import java.util.Vector;
 
 import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.property.CyProperty;
-import org.lwjgl.LWJGLException;
 import org.lwjgl.opencl.CL;
 
 
@@ -61,7 +58,7 @@ public class CyCL
 			{
 				System.out.println("OpenCL was not initialized because it crashed on the previous attempt.");
 				System.out.println("If you think it works now, remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
-				System.out.println("For more information on how to troubleshoot OpenCL, please refer to http://www.cytoscape.org/troubleshootingGPU.html.");
+				System.out.println("For more information on how to troubleshoot OpenCL, please refer to http://manual.cytoscape.org/en/stable/Cytoscape_and_OpenCL_GPU.html.");
 			}
 			else
 			{						
@@ -91,6 +88,7 @@ public class CyCL
 				}
 				catch (Throwable e)
 				{
+					e.printStackTrace();
 					return false;
 				}
 			}

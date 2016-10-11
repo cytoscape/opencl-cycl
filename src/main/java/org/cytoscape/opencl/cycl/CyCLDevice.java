@@ -598,18 +598,29 @@ public class CyCLDevice
 			if(finalized)
 				return;
 			
-			for(Entry<String, CyCLProgram> entry : programs.entrySet())
-				entry.getValue().finalize();
+			if(programs != null)
+			{
+				for(Entry<String, CyCLProgram> entry : programs.entrySet())
+				{
+					if(entry.getValue() != null)
+					{
+						entry.getValue().finalize();
+					}
+				}
+			}
 			
-			context.finalize();
+			if(context != null)
+			{
+				context.finalize();
+			}
 			
 			finalized = true;		
 			super.finalize();
 		}
 		catch (Throwable exc)
 		{
-			// System.out.println("CyCLDevice Exception: "+exc.getMessage());
-			throw new RuntimeException("Could not finalize CyCLDevice object.");
+			System.out.println("Could not finalize CyCLDevice " + name + ": " + exc.getMessage());
+			throw new RuntimeException("Could not finalize CyCLDevice object.", exc);
 		}
 	}
 

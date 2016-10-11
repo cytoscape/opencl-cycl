@@ -114,7 +114,7 @@ public class CyCLProgram
 		}
 		catch (Throwable exc)
 		{
-			// System.out.println("CyCLProgram Exception: "+exc.getMessage());
+			System.out.println("Could not finalize CyCLProgram " + program + ": " + exc.getMessage());
 			throw new CyCLException("Could not finalize CyCLProgram object.");
 		}
 	}

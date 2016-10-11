@@ -1,31 +1,24 @@
 package org.cytoscape.opencl.cycl;
 
-import static org.junit.Assert.*;
-
-import org.lwjgl.opencl.*;
 import org.junit.Test;
+import org.lwjgl.LWJGLUtil;
+import org.lwjgl.opencl.CL;
 
 public class CLTest
 {
 
 	@Test
-	public void testBestDevice()
+	public void testBestDevice() throws Exception
 	{		
 		CyCLDevice device = null;
-		try
-		{
-			CL.create();
-			//Also performs a benchmark without offsets
-			device = CyCLDevice.getAll("").get(0);
-			
-			//Now a benchmark with offsets
-			device.performBenchmark(true);
-		} 
-		catch (Exception e) 
-		{
-			CL.destroy();
-			fail("Could not obtain device."); 
-		}
+		
+		
+		CL.create();
+		//Also performs a benchmark without offsets
+		device = CyCLDevice.getAll("").get(0);
+		
+		//Now a benchmark with offsets
+		device.performBenchmark(true);
 		
 		//System.out.println(device.name);
 		
