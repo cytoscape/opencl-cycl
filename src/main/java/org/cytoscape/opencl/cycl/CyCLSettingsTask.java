@@ -23,16 +23,17 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 	{
 		return "OpenCL Settings";
 	}
+		
+	private static final List<String> KEYS = Arrays.asList(CyCLSettings.PREFERREDNAME, CyCLSettings.PREVENT_FULL_OCCUPATION);
 	
-	static final String OPENCL_PREFERREDNAME = "opencl.device.preferred";
-	
-	private static final List<String> KEYS = Arrays.asList(OPENCL_PREFERREDNAME);
-	
-    private static final List<String> DEVICE_NAMES = new ArrayList<>();
 
 	@Tunable(description="Preferred Device:")
 	public ListSingleSelection<String> preferredNameList;
 
+	@Tunable(description="Prevent Full Device Occupation:",tooltip="Useful when computing on a GPU that runs the computers display.\n"
+			+ " Instructs apps to not occupy the device completely, letting OS rendering to take place and preventing the OS from freezing.")
+	public boolean preventFullOccupation;
+	
 	private final Map<String, String> oldSettings;
 	private final Properties properties;
 
@@ -41,24 +42,34 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 		oldSettings = new HashMap<String, String>();
 		this.properties = properties.getProperties();
 				
-		DEVICE_NAMES.clear();
+	    List<String> deviceNames = new ArrayList<>();
 		List<CyCLDevice> devices = CyCL.getDevices();
 		for (CyCLDevice device : devices)
-			DEVICE_NAMES.add(device.name);
+			deviceNames.add(device.name);
 		
-		preferredNameList = new ListSingleSelection<String>(DEVICE_NAMES);
+		preferredNameList = new ListSingleSelection<String>(deviceNames);
 		
 		try 
 		{
-            final String preferredName = this.properties.getProperty(OPENCL_PREFERREDNAME);
-            if (DEVICE_NAMES.contains(preferredName))
+            final String preferredName = this.properties.getProperty(CyCLSettings.PREFERREDNAME);
+            if (deviceNames.contains(preferredName))
             	preferredNameList.setSelectedValue(preferredName);
             else
-            	preferredNameList.setSelectedValue(DEVICE_NAMES.get(0));
+            	preferredNameList.setSelectedValue(deviceNames.get(0));
 		} 
 		catch (IllegalArgumentException e) 
 		{
-			preferredNameList.setSelectedValue(DEVICE_NAMES.get(0));
+			preferredNameList.setSelectedValue(deviceNames.get(0));
+		}
+
+		String preventOccupationString = this.properties.getProperty(CyCLSettings.PREVENT_FULL_OCCUPATION);
+		if(preventOccupationString == null)
+		{
+			preventFullOccupation = false; //the default is false
+		}
+		else 
+		{
+			preventFullOccupation = Boolean.parseBoolean(preventOccupationString);			
 		}
 
         assignSystemProperties();
@@ -66,7 +77,7 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 
     public void assignSystemProperties() 
     {
-        String newPreferred = properties.getProperty(OPENCL_PREFERREDNAME);
+        String newPreferred = properties.getProperty(CyCLSettings.PREFERREDNAME);
         if (newPreferred == null || newPreferred.length() == 0)
         	return;
         
@@ -104,7 +115,8 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 			properties.remove(key);
 		}
 
-		properties.setProperty(OPENCL_PREFERREDNAME, preferredNameList.getSelectedValue());
+		properties.setProperty(CyCLSettings.PREFERREDNAME, preferredNameList.getSelectedValue());
+		properties.setProperty(CyCLSettings.PREVENT_FULL_OCCUPATION, Boolean.toString(preventFullOccupation));
         
         assignSystemProperties();
 	}
