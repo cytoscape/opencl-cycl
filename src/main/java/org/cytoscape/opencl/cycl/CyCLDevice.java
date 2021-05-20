@@ -638,16 +638,15 @@ public class CyCLDevice
         {
             for(CLDevice id : platform.getDevices(CL10.CL_DEVICE_TYPE_ALL))
             {
-            	CyCLDevice newDevice;
             	try 
             	{ 
-            		newDevice = new CyCLDevice(id, platform, preferredDevice.equals("")); // Benchmark only if there is no preferred device.
+            		CyCLDevice newDevice = new CyCLDevice(id, platform, preferredDevice.equals("")); // Benchmark only if there is no preferred device.
+            		devices.add(newDevice);
             	} 
-            	catch (Exception e1) 
-            	{ 
-            		continue; 
+            	catch (Exception e1)
+            	{
+            		throw new CyCLException(e1);
             	}
-            	devices.add(newDevice);
             }
         }
     	
