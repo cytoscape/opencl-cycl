@@ -35,7 +35,14 @@ public class CyCLDevice
 	
 	public String platformName;
 	
+	/**
+	 * A unique identifier valid only in CyCL - it is the combination of {{@link #version} and {@link #openCLName}.
+	 */
 	public final String name;
+	/**
+	 * The name of the device as reported by the OpenCL API
+	 */
+	public final String openCLName;
 	public final String vendor;
 	public final String version;
 	public final DeviceTypes type;
@@ -99,6 +106,7 @@ public class CyCLDevice
 		vendor = device.getInfoString(CL10.CL_DEVICE_VENDOR);
 		version = device.getInfoString(CL10.CL_DEVICE_VERSION);
 		name = version + " " + device.getInfoString(CL10.CL_DEVICE_NAME);
+		openCLName = device.getInfoString(CL10.CL_DEVICE_NAME);
 		
 		// Device type can be in theory a combination of multiple enum values, GPU is probably the most important indicator
 		long longType = device.getInfoLong(CL10.CL_DEVICE_TYPE);

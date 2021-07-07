@@ -23,8 +23,22 @@ public class CyCL
 	private static List<CyCLDevice> devices = new ArrayList<>();
 	private static boolean isInitialized = false;
 	
+	private static CyProperty<Properties> propertyService;
+	
 	public CyCL()
 	{
+	}
+	
+	public static CyCLDevice getPreferredDevice()
+	{
+		if (devices == null || devices.isEmpty())
+		{
+			return null;
+		}
+		else
+		{
+			return devices.get(0);
+		}
 	}
 	
 	public static List<CyCLDevice> getDevices()
@@ -33,6 +47,26 @@ public class CyCL
 			devices = new ArrayList<>();
 		
 		return devices;
+	}
+	
+	/**
+	 * Apps that run prolonged computations should check this flag, if it is true, any prolonged computations
+	 * should be split into smaller parts to prevent 100% occupation of the device. This is mostly useful for users
+	 * than run OpenCL computations on the same GPU that powers their display, since fully occupying such a GPU 
+	 * may lead to system freeze and/or the computation may be terminated (as with Timeout Detection Recovery on Windows).
+	 * @return
+	 */
+	public static boolean isPreventFullOccupation()
+	{
+		String preventOccupationString = propertyService.getProperties().getProperty(CyCLSettings.PREVENT_FULL_OCCUPATION);
+		if (preventOccupationString == null)
+		{
+			return false;
+		}
+		else
+		{
+			return Boolean.parseBoolean(preventOccupationString);
+		}
 	}
 	
 	/**
@@ -49,7 +83,9 @@ public class CyCL
 		{
 			if (isInitialized)
 				return true;
-					
+			
+			CyCL.propertyService = propertyService;
+			
 			File configDir = applicationConfig.getConfigurationDirectoryLocation();
 			String dummyPath = configDir.getAbsolutePath() + File.separator + "disable-opencl.dummy";
 			
@@ -70,7 +106,7 @@ public class CyCL
 				
 					// Populate device list
 					Properties globalProps = propertyService.getProperties();
-					String preferredDevice = globalProps.getProperty("opencl.device.preferred");
+					String preferredDevice = globalProps.getProperty(CyCLSettings.PREFERREDNAME);
 					
 					if (preferredDevice == null)
 						preferredDevice = "";
