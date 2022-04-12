@@ -87,11 +87,14 @@ public class CyCLDevice
 		
 		this.device = device;
 		devicePlatform = platform;
+		// Obtain information about the platform the device belongs to
+		platformName = devicePlatform.getInfoString(CL10.CL_PLATFORM_NAME);
+    System.out.println("Platform: "+platformName);
 		context = new CyCLContext(this);
 		programs = new HashMap<>();
 		
 		// Obtain information about the platform the device belongs to
-		platformName = devicePlatform.getInfoString(CL10.CL_PLATFORM_NAME);
+		// platformName = devicePlatform.getInfoString(CL10.CL_PLATFORM_NAME);
 		//if (platformName.indexOf(" ") > -1)
 			//platformName = platformName.substring(0, platformName.indexOf(" "));
 
@@ -633,6 +636,7 @@ public class CyCLDevice
     public static List<CyCLDevice> getAll(final String preferredDevice)
     {
     	List<CyCLDevice> devices = new ArrayList<>();
+      Exception savedException = null;
     	
         for(CLPlatform platform : CLPlatform.getPlatforms())
         {
@@ -645,9 +649,15 @@ public class CyCLDevice
             	} 
             	catch (Exception e1)
             	{
-            		throw new CyCLException(e1);
+                // We may have a device that is mis-behaving, but we should still keep on trying
+                savedException = e1;
+            		// throw new CyCLException(e1);
             	}
             }
+        }
+
+        if (devices.size() == 0 && savedException != null) {
+          throw new CyCLException(savedException);
         }
     	
     	final class DeviceComparator implements Comparator<CyCLDevice> 
