@@ -24,6 +24,6 @@ public class CyCLSettingsTaskFactory extends AbstractTaskFactory
 	@Override
 	public TaskIterator createTaskIterator()
 	{
-		return new TaskIterator(2, new CyCLSettingsTask(properties));
+		return new TaskIterator(new CyCLSettingsTask(properties));
 	}	
 }

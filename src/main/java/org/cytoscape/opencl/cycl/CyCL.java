@@ -66,6 +66,7 @@ public class CyCL
 				{
 					dummy.createNewFile();
 					
+          CL.destroy();
 					CL.create();
 				
 					// Populate device list

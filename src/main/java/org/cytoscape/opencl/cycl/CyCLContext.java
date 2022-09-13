@@ -4,52 +4,66 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.lwjgl.*;
 import org.lwjgl.opencl.*;
+import org.lwjgl.system.*;
 import org.lwjgl.BufferUtils;
+
+import static org.lwjgl.opencl.CL11.*;
+import static org.lwjgl.system.MemoryStack.*;
+import static org.lwjgl.system.MemoryUtil.*;
 
 public class CyCLContext 
 {
-	private Boolean finalized = false;
-	
-	private CLContext context;
-	private CLCommandQueue queue;
-	
-	public CyCLContext(CyCLDevice device)
-	{
-		List<CLDevice> devices = new ArrayList<>();
-		devices.add(device.getDevice());
-		IntBuffer errorBuffer = BufferUtils.createIntBuffer(1);
-		
-		try
-		{
-	        context = CLContext.create(device.getPlatform(), devices, errorBuffer);
-	        Util.checkCLError(errorBuffer.get(0));
-	        
-	        queue = CL10.clCreateCommandQueue(context, device.getDevice(), CL10.CL_QUEUE_PROFILING_ENABLE, errorBuffer);
-	        Util.checkCLError(errorBuffer.get(0));
-		}
-		catch (Exception e) { throw new RuntimeException("Could not create device context."); }
-	}
-	
-	public CLContext getContext()
-	{
-		return context;
-	}
-	
-	public CLCommandQueue getQueue()
-	{
-		return queue;
-	}
-	
-	@Override
-	protected void finalize() throws Throwable {
-		if(finalized)
-			return;
-		
-		CL10.clReleaseCommandQueue(queue);
-		CL10.clReleaseContext(context);
-		
-		finalized = true;		
-		super.finalize();
-	}
+  private Boolean finalized = false;
+  // private MemoryStack stack;
+  
+  // private CLContext context;
+  // private CLCommandQueue queue;
+  private long context;
+  private long queue = -1;
+  
+  public CyCLContext(CyCLPlatform platform, CyCLDevice device)
+  {
+    CLContextCallback contextCB = null;
+    try (MemoryStack stack = stackPush()) {
+      IntBuffer errcode_ret = stack.callocInt(1);
+      contextCB = CLContextCallback.create((errinfo, private_info, cb, user_data) -> {
+        System.err.println("[LWJGL] cl_context_callback");
+        System.err.println("\tInfo: " + memUTF8(errinfo));
+      });
+      PointerBuffer ctxProps = platform.getContextProps();
+      // System.out.println("contextProps limit = "+ctxProps.limit());
+      // System.out.println("Terminator = "+(ctxProps.get(ctxProps.limit() - 1) == NULL));
+      context = clCreateContext(ctxProps, device.getDevice(), contextCB, NULL, errcode_ret);
+      CyCLUtils.checkCLError(errcode_ret);
+
+      queue = clCreateCommandQueue(context, device.getDevice(), NULL, errcode_ret);
+      CyCLUtils.checkCLError(errcode_ret);
+    } finally {
+      contextCB.free();
+    }
+  }
+  
+  public long getContext()
+  {
+    return context;
+  }
+  
+  public long getQueue()
+  {
+    return queue;
+  }
+  
+  @Override
+  protected void finalize() throws Throwable {
+    if(finalized)
+      return;
+    
+    CL10.clReleaseCommandQueue(queue);
+    CL10.clReleaseContext(context);
+    
+    finalized = true;    
+    super.finalize();
+  }
 }

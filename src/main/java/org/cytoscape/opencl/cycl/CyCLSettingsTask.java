@@ -28,9 +28,8 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 	
 	private static final List<String> KEYS = Arrays.asList(OPENCL_PREFERREDNAME);
 	
-    private static final List<String> DEVICE_NAMES = new ArrayList<>();
+  private static final List<String> DEVICE_NAMES = new ArrayList<>();
 
-	@Tunable(description="Preferred Device:")
 	public ListSingleSelection<String> preferredNameList;
 
 	private final Map<String, String> oldSettings;
@@ -38,6 +37,7 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 
 	public CyCLSettingsTask(CyProperty<Properties> properties) 
 	{
+    System.out.println("Settings task");
 		oldSettings = new HashMap<String, String>();
 		this.properties = properties.getProperties();
 				
@@ -45,33 +45,37 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 		List<CyCLDevice> devices = CyCL.getDevices();
 		for (CyCLDevice device : devices)
 			DEVICE_NAMES.add(device.name);
-		
+
 		preferredNameList = new ListSingleSelection<String>(DEVICE_NAMES);
 		
 		try 
 		{
-            final String preferredName = this.properties.getProperty(OPENCL_PREFERREDNAME);
-            if (DEVICE_NAMES.contains(preferredName))
-            	preferredNameList.setSelectedValue(preferredName);
-            else
-            	preferredNameList.setSelectedValue(DEVICE_NAMES.get(0));
+      final String preferredName = this.properties.getProperty(OPENCL_PREFERREDNAME);
+      if (DEVICE_NAMES.contains(preferredName))
+        preferredNameList.setSelectedValue(preferredName);
+      else
+        preferredNameList.setSelectedValue(DEVICE_NAMES.get(0));
 		} 
 		catch (IllegalArgumentException e) 
 		{
 			preferredNameList.setSelectedValue(DEVICE_NAMES.get(0));
 		}
 
-        assignSystemProperties();
+    assignSystemProperties();
 	}
 
-    public void assignSystemProperties() 
-    {
-        String newPreferred = properties.getProperty(OPENCL_PREFERREDNAME);
-        if (newPreferred == null || newPreferred.length() == 0)
-        	return;
-        
-        CyCL.makePreferred(newPreferred);
+  public void assignSystemProperties() 
+  {
+    try {
+      String newPreferred = properties.getProperty(OPENCL_PREFERREDNAME);
+      if (newPreferred == null || newPreferred.length() == 0)
+        return;
+      
+      CyCL.makePreferred(newPreferred);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+  }
 	
 	@Override
 	public ValidationState getValidationState(final Appendable errMsg) 
@@ -106,7 +110,7 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 
 		properties.setProperty(OPENCL_PREFERREDNAME, preferredNameList.getSelectedValue());
         
-        assignSystemProperties();
+    assignSystemProperties();
 	}
 
 	void revertSettings() 
@@ -120,6 +124,6 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 		}
 		oldSettings.clear();
         
-        assignSystemProperties();
+    assignSystemProperties();
 	}
 }

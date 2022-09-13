@@ -1,8 +1,4 @@
-__kernel void BenchmarkKernel(__global int* a,
-							  __global int* b,
-							  __global int* c,
-							  int n)
-{
+__kernel void BenchmarkKernel(__global const int* a, __global const int* b, __global int* c, int const n) {
     int id = get_global_id(0);
     if (id >= n)
         return;

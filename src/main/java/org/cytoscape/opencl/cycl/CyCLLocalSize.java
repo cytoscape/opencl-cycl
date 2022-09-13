@@ -1,5 +1,6 @@
 package org.cytoscape.opencl.cycl;
 
+import static org.lwjgl.opencl.CL10.*;
 
 /***
  * Specifies the amount of local memory in an argument of a kernel call.
@@ -10,6 +11,7 @@ package org.cytoscape.opencl.cycl;
 public class CyCLLocalSize 
 {
 	private Long size;
+  private CyCLBuffer buffer;
 	
 	/***
 	 * Initializes the object with the specified amount of bytes.
@@ -30,4 +32,10 @@ public class CyCLLocalSize
 	{
 		return size;
 	}
+
+  public CyCLBuffer getBuffer(CyCLContext context) {
+    if (buffer == null)
+      buffer = new CyCLBuffer(context, byte.class, size.intValue(), CL_MEM_READ_ONLY);
+    return buffer;
+  }
 }

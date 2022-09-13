@@ -11,12 +11,13 @@
 		<maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
 		<maven-bundle-plugin.version>4.1.0</maven-bundle-plugin.version>
 		<cytoscape.api.version>3.8.0</cytoscape.api.version>
+    <lwjgl.version>3.3.1</lwjgl.version>
 	</properties>
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.cytoscape</groupId>
 	<artifactId>opencl-cycl</artifactId>
-	<version>3.6.2</version>
+	<version>3.10.0</version>
 	<name>CyCL</name>
 	<packaging>bundle</packaging>
 
@@ -63,6 +64,11 @@
 			<name>Cytoscape Snapshots</name>
 			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_snapshots/</url>
 		</repository>
+    <repository>
+      <id>mvnrepository.com</id>
+      <name>mvnrepository.com</name>
+      <url>http://mvnrepository.com/artifact/</url>
+    </repository>
 	</repositories>
 
 	<build>
@@ -92,9 +98,9 @@
 				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
-					<argLine>-Djava.library.path=${project.basedir}/target/natives</argLine>
+					<!--argLine>-Djava.library.path=${project.basedir}/target/natives</argLine-->
 					<systemPropertyVariables>
-						<org.lwjgl.util.Debug>true</org.lwjgl.util.Debug>
+						<org.lwjgl.util.Debug>falsee</org.lwjgl.util.Debug>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>
@@ -111,23 +117,11 @@
 						<Export-Package>${bundle.namespace}</Export-Package>
 						<Private-Package>${bundle.namespace}.*</Private-Package>
 						<Bundle-Activator>${bundle.namespace}.CyActivator</Bundle-Activator>
-						<Embed-Dependency>lwjgl;scope=compile|runtime</Embed-Dependency>
+            <Embed-Dependency>*;scope=!provided</Embed-Dependency>
+            <Embed-Transitive>true</Embed-Transitive>
+            <Import-Package>*;resolution:=optional</Import-Package>
 						<Import-Package>!sun.misc,!com.apple.eio,!net.java.games.input,!sun.reflect,*</Import-Package>
-						<Bundle-NativeCode>
-							native/linux/libjinput-linux.so;
-							native/linux/liblwjgl.so; native/linux/libopenal.so; osname=linux; processor=x86,
-							native/linux/libjinput-linux64.so;
-							native/linux/liblwjgl64.so; native/linux/libopenal64.so; osname=linux; processor=x86_64,
-							native/macosx/libjinput-osx.jnilib; native/macosx/liblwjgl.dylib;
-							native/macosx/openal.dylib; osname=macosx; processor=x86; processor=x86_64,
-							native/windows/jinput-dx8.dll;
-							native/windows/jinput-raw.dll; native/windows/lwjgl.dll;
-							native/windows/OpenAL32.dll; osname=win32; processor=x86,
-							native/windows/jinput-raw_64.dll;
-							native/windows/jinput-dx8_64.dll; native/windows/lwjgl64.dll;
-							native/windows/OpenAL64.dll; osname=win32; processor=x86_64,
-							*
-						</Bundle-NativeCode>
+						<Import-Package>javax.annotation;version=!;resolution:=optional,javax.annotation.meta;version=!;resolution:=optional,*</Import-Package>
 					</instructions>
 				</configuration>
 			</plugin>
@@ -148,38 +142,119 @@
 		</plugins>
 	</build>
 
+  <profiles>
+	<profile>
+		<id>lwjgl-natives-linux-amd64</id>
+		<activation>
+			<os>
+				<family>unix</family>
+				<arch>amd64</arch>
+			</os>
+		</activation>
+		<properties>
+			<lwjgl.natives>natives-linux</lwjgl.natives>
+		</properties>
+	</profile>
+	<profile>
+		<id>lwjgl-natives-linux-aarch64</id>
+		<activation>
+			<os>
+				<family>unix</family>
+				<arch>aarch64</arch>
+			</os>
+		</activation>
+		<properties>
+			<lwjgl.natives>natives-linux-arm64</lwjgl.natives>
+		</properties>
+	</profile>
+	<profile>
+		<id>lwjgl-natives-macos-x86_64</id>
+		<activation>
+			<os>
+				<family>mac</family>
+				<arch>x86_64</arch>
+			</os>
+		</activation>
+		<properties>
+			<lwjgl.natives>natives-macos</lwjgl.natives>
+		</properties>
+	</profile>
+	<profile>
+		<id>lwjgl-natives-macos-aarch64</id>
+		<activation>
+			<os>
+				<family>mac</family>
+				<arch>aarch64</arch>
+			</os>
+		</activation>
+		<properties>
+			<lwjgl.natives>natives-macos-arm64</lwjgl.natives>
+		</properties>
+	</profile>
+	<profile>
+		<id>lwjgl-natives-windows-amd64</id>
+		<activation>
+			<os>
+				<family>windows</family>
+				<arch>amd64</arch>
+			</os>
+		</activation>
+		<properties>
+			<lwjgl.natives>natives-windows</lwjgl.natives>
+		</properties>
+	</profile>
+</profiles>
+
+  <dependencyManagement>
+	<dependencies>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-bom</artifactId>
+			<version>${lwjgl.version}</version>
+			<scope>import</scope>
+			<type>pom</type>
+		</dependency>
+	</dependencies>
+  </dependencyManagement>
+
 	<!-- Dependencies needed to compile this project. -->
 	<dependencies>
 		<dependency>
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.core</artifactId>
 			<version>4.2.0</version>
+      <scope>provided</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.cytoscape</groupId>
 			<artifactId>application-api</artifactId>
 			<version>${cytoscape.api.version}</version>
+      <scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.cytoscape</groupId>
 			<artifactId>service-api</artifactId>
 			<version>${cytoscape.api.version}</version>
+      <scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.cytoscape</groupId>
 			<artifactId>model-api</artifactId>
 			<version>${cytoscape.api.version}</version>
+      <scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.cytoscape</groupId>
 			<artifactId>work-api</artifactId>
 			<version>${cytoscape.api.version}</version>
+      <scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.cytoscape</groupId>
 			<artifactId>property-api</artifactId>
 			<version>${cytoscape.api.version}</version>
+      <scope>provided</scope>
 		</dependency>
 
 
@@ -199,10 +274,45 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.lwjgl.lwjgl</groupId>
+			<groupId>org.lwjgl</groupId>
 			<artifactId>lwjgl</artifactId>
-			<version>2.9.3</version>
+      <optional>true</optional>
 		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl</artifactId>
+      <optional>true</optional>
+      <classifier>natives-linux</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl</artifactId>
+      <optional>true</optional>
+      <classifier>natives-macos</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl</artifactId>
+      <optional>true</optional>
+      <classifier>natives-macos-arm64</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl</artifactId>
+      <optional>true</optional>
+      <classifier>natives-windows</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-opencl</artifactId>
+      <optional>true</optional>
+		</dependency>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+      <optional>true</optional>
+    </dependency>
 	</dependencies>
 
 </project>

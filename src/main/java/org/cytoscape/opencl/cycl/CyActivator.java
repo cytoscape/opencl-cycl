@@ -32,7 +32,11 @@ public class CyActivator extends AbstractCyActivator
 				
 				CyCL service = new CyCL();
 				
-				//System.out.println("Top device after init = " + CyCL.getDevices().get(0).name);
+        if (CyCL.getDevices().size() == 0) {
+				  System.out.println("No devices found");
+        } else {
+          System.out.println("Top device after init = " + CyCL.getDevices().get(0).name);
+        }
 				
 				Properties properties = new Properties();
 				registerService(context, service, CyCL.class, properties);
