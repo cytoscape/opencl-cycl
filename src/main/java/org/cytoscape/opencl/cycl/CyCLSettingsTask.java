@@ -30,6 +30,7 @@ public class CyCLSettingsTask extends AbstractTask implements TunableValidator
 	
   private static final List<String> DEVICE_NAMES = new ArrayList<>();
 
+  @Tunable(description="Preferred OpenCL Device")
 	public ListSingleSelection<String> preferredNameList;
 
 	private final Map<String, String> oldSettings;

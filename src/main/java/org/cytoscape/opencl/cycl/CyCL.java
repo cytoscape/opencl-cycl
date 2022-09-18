@@ -22,19 +22,19 @@ public class CyCL
 	public static Object sync = new Object();
 	private static List<CyCLDevice> devices = new ArrayList<>();
 	private static boolean isInitialized = false;
-	
+
 	public CyCL()
 	{
 	}
-	
+
 	public static List<CyCLDevice> getDevices()
 	{
 		if (devices == null)
 			devices = new ArrayList<>();
-		
+
 		return devices;
 	}
-	
+
 	/**
 	 * Loads all necessary native libraries, initializes LWJGL and populates the device list.
 	 * Should be called only once on startup.
@@ -44,15 +44,15 @@ public class CyCL
 	 * @return True if initialized correctly; false otherwise
 	 */
 	public static boolean initialize(CyApplicationConfiguration applicationConfig, CyProperty<Properties> propertyService)
-	{		
+	{
 		synchronized (initSync)
 		{
 			if (isInitialized)
 				return true;
-					
+
 			File configDir = applicationConfig.getConfigurationDirectoryLocation();
 			String dummyPath = configDir.getAbsolutePath() + File.separator + "disable-opencl.dummy";
-			
+
 			File dummy = new File(dummyPath);
 			if (dummy.exists())
 			{
@@ -61,21 +61,21 @@ public class CyCL
 				System.out.println("For more information on how to troubleshoot OpenCL, please refer to http://manual.cytoscape.org/en/stable/Cytoscape_and_OpenCL_GPU.html.");
 			}
 			else
-			{						
+			{
 				try
 				{
-					dummy.createNewFile();
-					
+					// dummy.createNewFile();
+
           CL.destroy();
 					CL.create();
-				
+
 					// Populate device list
 					Properties globalProps = propertyService.getProperties();
 					String preferredDevice = globalProps.getProperty("opencl.device.preferred");
-					
+
 					if (preferredDevice == null)
 						preferredDevice = "";
-					
+
 					devices = CyCLDevice.getAll(preferredDevice);
 
 					if (!dummy.delete())
@@ -83,7 +83,7 @@ public class CyCL
 						System.out.println("Could not delete OpenCL dummy file despite OpenCL being OK.");
 						System.out.println("You should try to remove disable-opencl.dummy manually from Cytoscape's configuration directory.");
 					}
-					
+
 					if (devices == null || devices.size() == 0)
 						return false;
 				}
@@ -93,20 +93,20 @@ public class CyCL
 					return false;
 				}
 			}
-			
+
 			isInitialized = true;
-			
+
 			return true;
 		}
 	}
-	
+
 	public static void makePreferred(String name)
 	{
 		synchronized (initSync)
 		{
 			if (devices == null)
 				return;
-			
+
 			CyCLDevice newPreferred = null;
 			for (CyCLDevice device : devices)
 				if (device.name.equals(name))
@@ -114,7 +114,7 @@ public class CyCL
 					newPreferred = device;
 					break;
 				}
-			
+
 			if (newPreferred != null)
 			{
 				devices.remove(newPreferred);

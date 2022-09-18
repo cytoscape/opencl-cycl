@@ -173,29 +173,29 @@ public class CyCLDevice
           bestBlockSize = 128;
           bestWarpSize = 32;
         }
-            else if(platformName.toLowerCase().contains("apple"))   // These guys are special.
-            {
-                String lowName = name.toLowerCase();
+        else if(platformName.toLowerCase().contains("apple"))   // These guys are special.
+        {
+          String lowName = name.toLowerCase();
 
-                if(lowName.contains("radeon") || lowName.contains("fire"))
-                {
-                    bestBlockSize = 128;
-                    bestWarpSize = 64;
-                }
-                else if(lowName.contains("geforce") ||
-                        lowName.contains("gtx") ||
-                        lowName.contains("quadro") ||
-                        lowName.contains("tesla"))
-                {
-                    bestBlockSize = 192;
-                    bestWarpSize = 32;
-                }
-                else    // Probably Intel.
-                {
-                    bestBlockSize = 128;
-                    bestWarpSize = 32;
-                }
-            }
+          if(lowName.contains("radeon") || lowName.contains("fire"))
+          {
+            bestBlockSize = 128;
+            bestWarpSize = 64;
+          }
+          else if(lowName.contains("geforce") ||
+                  lowName.contains("gtx") ||
+                  lowName.contains("quadro") ||
+                  lowName.contains("tesla"))
+          {
+            bestBlockSize = 192;
+            bestWarpSize = 32;
+          }
+          else    // Probably Intel.
+          {
+            bestBlockSize = 128;
+            bestWarpSize = 32;
+          }
+        }
         else  // A new player has entered the GPU market!
         {
           bestBlockSize = 32;

@@ -32,10 +32,4 @@ public class CyCLLocalSize
 	{
 		return size;
 	}
-
-  public CyCLBuffer getBuffer(CyCLContext context) {
-    if (buffer == null)
-      buffer = new CyCLBuffer(context, byte.class, size.intValue(), CL_MEM_READ_ONLY);
-    return buffer;
-  }
 }

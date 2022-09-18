@@ -47,7 +47,6 @@ public class CyCLKernel
         {
           // We're allocating local memory
           CyCLLocalSize localSize = (CyCLLocalSize)arg;
-          // CyCLBuffer bufferLocal = localSize.getBuffer(context);
           // CyCLBuffer bufferLocal = new CyCLBuffer(context, byte.class, localSize.getSize().intValue(), CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR);
           CyCLUtils.checkCLError(clSetKernelArg(kernel, a++, localSize.getSize().longValue()), "clSetKernelArg[CyCLLocalSize]");
         }
