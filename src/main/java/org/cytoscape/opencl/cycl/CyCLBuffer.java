@@ -557,8 +557,10 @@ public class CyCLBuffer
    */
   public void free()
   {
-    memFree(buffer);
     this.finalize();
+		// We don't free memory created by BufferUtils. If we change to using
+		// MemoryUtil, we'll need to take this on
+    // memFree(buffer);
   }
   
   /***
